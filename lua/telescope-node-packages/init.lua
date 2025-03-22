@@ -85,14 +85,12 @@ local function remove_package(package_name)
 					vim.log.levels.INFO,
 					{ title = "Telescope Node Packages" }
 				)
-				return true
 			else
 				vim.notify(
 					"Failed to remove package " .. package_name,
 					vim.log.levels.WARN,
 					{ title = "Telescope Node Packages" }
 				)
-				return false
 			end
 		end,
 	}):start()
@@ -139,14 +137,12 @@ local function install_packages(package_names)
 						vim.log.levels.INFO,
 						{ title = "Telescope Node Packages" }
 					)
-					return true
 				else
 					vim.notify(
 						"Failed to install package " .. package_name,
 						vim.log.levels.ERROR,
 						{ title = "Telescope Node Packages" }
 					)
-					return false
 				end
 			end,
 		}):start()
@@ -172,14 +168,13 @@ function M.start()
 				results = packages,
 			}),
 			sorter = conf.generic_sorter({}),
-			attach_mappings = function(picker, map)
+			attach_mappings = function(bufnr_prompt, map)
 				actions.select_default:replace(function()
 					local selection = action_state.get_selected_entry()
 					if selection then
 						local remove_status = remove_package(selection[1])
 						if remove_status then
 							table.insert(packages, selection[1])
-							picker.refresh()
 						end
 					end
 				end)
@@ -190,7 +185,6 @@ function M.start()
 						local install_status = install_packages(input)
 						if install_status then
 							table.insert(packages, input)
-							picker.refresh()
 						end
 					else
 						vim.notify(
