@@ -163,7 +163,7 @@ function M.start()
 	local packages = get_installed_packages()
 	pickers
 		.new({}, {
-			prompt_title = "Node.js Packages",
+			prompt_title = "Node Packages Manager",
 			finder = finders.new_table({
 				results = packages,
 			}),
