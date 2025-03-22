@@ -33,26 +33,38 @@ local function get_installed_packages()
 	return packages
 end
 
+local function install_many(init, package_name)
+	local new_tb = init
+	if type(package_name) == "table" then
+		for _, value in ipairs(package_name) do
+			table.insert(new_tb, value)
+		end
+	else
+		table.insert(new_tb, package_name)
+	end
+	return new_tb
+end
+
 local args = function(command, package_name)
 	if command == "yarn" then
 		return {
 			remove = { "remove", package_name },
-			install = { "add", package_name },
+			install = install_many({ "add" }, package_name),
 		}
 	elseif command == "pnpm" then
 		return {
 			remove = { "remove", package_name },
-			install = { "add", package_name },
+			install = install_many({ "add" }, package_name),
 		}
 	else
 		return {
 			remove = { "uninstall", package_name },
-			install = { "install", package_name },
+			install = install_many({ "install" }, package_name),
 		}
 	end
 end
 
-local function remove_package(package_name)
+local function remove_package(package_name, picker)
 	local package_json_path = get_package_json_path()
 	if not package_json_path then
 		vim.notify(
@@ -80,11 +92,15 @@ local function remove_package(package_name)
 		args = args_cmd.remove,
 		on_exit = function(_, return_val)
 			if return_val == 0 then
-				vim.notify(
-					"Package " .. package_name .. " removed successfully",
-					vim.log.levels.INFO,
-					{ title = "Telescope Node Packages" }
-				)
+				vim.schedule(function()
+					local new_packages = get_installed_packages()
+					picker:refresh(finders.new_table({ results = new_packages }), { reset_prompt = true })
+					vim.notify(
+						"Package " .. package_name .. " removed successfully",
+						vim.log.levels.INFO,
+						{ title = "Telescope Node Packages" }
+					)
+				end)
 			else
 				vim.notify(
 					"Failed to remove package " .. package_name,
@@ -96,7 +112,7 @@ local function remove_package(package_name)
 	}):start()
 end
 
-local function install_packages(package_names)
+local function install_packages(package_names, picker)
 	local package_json_path = get_package_json_path()
 	if not package_json_path then
 		vim.notify(
@@ -120,35 +136,36 @@ local function install_packages(package_names)
 	end
 	local package_include = string.find(package_names, ",", 1, true) ~= nil
 	local packages
-	if package_include then
+	if not package_include then
 		packages = { package_names }
 	else
 		packages = vim.split(package_names, ",", { trimempty = true })
 	end
-	for _, package_name in ipairs(packages) do
-		local args_cmd = args(command, package_name)
-		Job:new({
-			command = command,
-			args = args_cmd.install,
-			on_exit = function(_, return_val)
-				if return_val == 0 then
+	local args_cmd = args(command, packages)
+	Job:new({
+		command = command,
+		args = args_cmd.install,
+		on_exit = function(_, return_val)
+			if return_val == 0 then
+				vim.schedule(function()
+					local new_packages = get_installed_packages()
+					picker:refresh(finders.new_table({ results = new_packages }), { reset_prompt = true })
 					vim.notify(
-						"Package " .. package_name .. " installed successfully",
+						"Packages " .. table.concat(packages, " ") .. " installed successfully",
 						vim.log.levels.INFO,
 						{ title = "Telescope Node Packages" }
 					)
-				else
-					vim.notify(
-						"Failed to install package " .. package_name,
-						vim.log.levels.ERROR,
-						{ title = "Telescope Node Packages" }
-					)
-				end
-			end,
-		}):start()
-	end
+				end)
+			else
+				vim.notify(
+					"Failed to install package " .. table.concat(packages, " "),
+					vim.log.levels.ERROR,
+					{ title = "Telescope Node Packages" }
+				)
+			end
+		end,
+	}):start()
 end
-
 function M.start()
 	local package_json_path = get_package_json_path()
 	if not package_json_path then
@@ -172,20 +189,16 @@ function M.start()
 				actions.select_default:replace(function()
 					local selection = action_state.get_selected_entry()
 					if selection then
-						local remove_status = remove_package(selection[1])
-						if remove_status then
-							table.insert(packages, selection[1])
-						end
+						local picker = action_state.get_current_picker(bufnr_prompt)
+						remove_package(selection[1], picker)
 					end
 				end)
 
 				map("i", "<CR>", function()
 					local input = action_state.get_current_line()
 					if input and #input > 0 then
-						local install_status = install_packages(input)
-						if install_status then
-							table.insert(packages, input)
-						end
+						local picker = action_state.get_current_picker(bufnr_prompt)
+						install_packages(input, picker)
 					else
 						vim.notify(
 							"The package name cannot be empty",
