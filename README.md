@@ -33,7 +33,7 @@ Plug 'nvim-telescope/telescope.nvim'
 - Using SuperInstaller
 
 ```lua
-use = {
+packages = {
     "wukuohao2003/telescope-node-packages.nvim"
     "nvim-telescope/telescope.nvim"
 }
@@ -75,7 +75,6 @@ In your project's package.json file, you need to add the following configuration
 
 ```json
 {
-  // Other package.json fields...
   "node_packages": {
     "command": "yarn | npm | pnpm"
   }
