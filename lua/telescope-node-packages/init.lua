@@ -6,8 +6,6 @@ local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 local Job = require("plenary.job")
 
-print(2)
-
 local function get_package_json_path()
 	local current_dir = vim.fn.getcwd()
 	local package_json_path = current_dir .. "/package.json"
