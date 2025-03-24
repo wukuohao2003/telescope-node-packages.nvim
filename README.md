@@ -61,12 +61,6 @@ In Neovim, you can use the following command to open the Telescope Node Packages
 :Telescope node_packages
 ```
 
-Or use the following code in Lua:
-
-```lua
-require('telescope').extensions.node_packages.start()
-```
-
 ## Configuration
 
 ### Adding Configuration to package.json
